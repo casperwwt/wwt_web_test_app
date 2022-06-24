@@ -1,0 +1,54 @@
+﻿@using WWT.NetTest.Blazor.Services
+@inherits LayoutComponentBase
+@inject IHttpContextAccessor HttpContextAccessor
+@inject IServerCountCache CachingService;
+
+
+<PageTitle>WWT Test App</PageTitle>
+
+<div class="page d-flex align-items-end p-2" style="height: 100vh;">
+    <div >
+
+       
+        <div class="p-2 large-text">HostName : @Environment.MachineName</div>
+        <div class="p-2 large-text">Unique Server Hits : @GetCount()</div>
+        <div class="p-2 large-text">Total Hits : @GetTotalCounter()</div>
+        
+    
+    
+        <div style="align-content: center">    
+            <div class="p-2 large-text text-decoration-underline">APIs</div>
+            <div class="p-2 medium-text">GET /counter/all - Combined Server Count</div>
+            <div class="p-2 medium-text">GET /counter/server - Single Server Count</div>
+            <div class="p-2 medium-text">POST /load/{seconds} - Generate High CPU For {seconds}</div>
+            <div class="p-2 medium-text">POST /kill - Stop application host [container will stop]</div>
+            
+        </div>
+        </div>
+    
+
+</div>
+
+@code
+{
+    public string GetCount()
+    {
+        
+            return CachingService.GetIndividualServerCounter(Environment.MachineName).ToString();
+    }
+
+    public int GetTotalCounter()
+    {
+        return CachingService.GetAllServersCounter();
+    }
+
+
+    protected override Task OnInitializedAsync()
+    {
+        
+        
+            CachingService.IncreaseIndividualConnectionCounter(Environment.MachineName);
+        
+        return base.OnInitializedAsync();
+    }
+}
