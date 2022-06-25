@@ -50,7 +50,7 @@ public static class ApiEndpointMapper
         
         app.MapGet("random", () =>
         {
-            return Results.Ok(Helpers.RandomString(32));
+            return Results.Ok($"{Environment.MachineName} : {Helpers.RandomString(32)}");
         });
 
     }
