@@ -16,6 +16,8 @@ builder.Services.AddServerSideBlazor();
 builder.Services.AddHttpContextAccessor();
 
 
+
+
 if (builder.Configuration.GetValue<string>("REDIS_CONNECTION_STRING") is null)
 {
     throw new ApplicationException(
@@ -23,28 +25,37 @@ if (builder.Configuration.GetValue<string>("REDIS_CONNECTION_STRING") is null)
         );
 }
 
+var redisSuccessFull = false;
 WebApplication? app = null;
-try{
+builder.Services.AddSingleton<IConnectionMultiplexer>(option =>
+    ConnectionMultiplexer.Connect(builder.Configuration.GetValue<string>("REDIS_CONNECTION_STRING")));
+builder.Services.AddSingleton<IServerCountCache, RedisService>();
+        
+        
+app = builder.Build();
 
-    builder.Services.AddSingleton<IConnectionMultiplexer>(option => ConnectionMultiplexer.Connect(builder.Configuration.GetValue<string>("REDIS_CONNECTION_STRING")));
-    builder.Services.AddSingleton<IServerCountCache, RedisService>();
-    
-    app = builder.Build();
 
-    app.Services.GetService<IServerCountCache>(); //Initiate instance of singleton to ensure bootstrapping works
-
-}
-catch (Exception e)
+while (!redisSuccessFull)
 {
+    try
+    {
     
-    
-    //Prevents app from starting if REDIS is not accessible 
-    
-    var logger = app.Services.GetService<ILogger<Program>>();
-    
-    logger.LogCritical("Exception connecting to Redis at startup. Exiting {Error}", e.Message);
-    throw;
+        app.Services.GetService<IServerCountCache>(); //Initiate instance of singleton to ensure bootstrapping works
+        
+        
+        redisSuccessFull = true;
+
+    }
+    catch (Exception e)
+    {
+        //Prevents app from starting if REDIS is not accessible 
+        
+        Console.WriteLine("Exception connecting to Redis at startup. Will retry in 5 seconds");
+        Thread.Sleep(5000);
+    }
 }
+
+
 
 
 // Configure the HTTP request pipeline.
