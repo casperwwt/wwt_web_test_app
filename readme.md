@@ -16,7 +16,7 @@ API allows for the the following endpoints:
 
             
 
-Redis Connection string is stored as a secret or alternatively can be set as a standard environment variable "REDIS_CONNECTION_STRING"
+Redis Connection string is stored as a secret or alternatively can be set as a standard environment variable "REDIS_CONNECTION_STRING". If no secret is used, update deploy_app.yml accordingly 
 
 
 ## Dependencies
@@ -29,11 +29,11 @@ Redis Connection string is stored as a secret or alternatively can be set as a s
 
 ```
 
-kubectl create ns wwttestapp
+> kubectl create ns wwttestapp
 
-kubectl apply -f redis_url_secret.yml -n wwttestapp
-kubectl apply -f deploy_app.yml -n wwttestapp
-kubectl apply -f deploy_app_loadbalancer.yml -n wwttestapp
+> kubectl apply -f redis_url_secret.yml -n wwttestapp 
+> kubectl apply -f deploy_app.yml -n wwttestapp
+> kubectl apply -f deploy_app_loadbalancer.yml -n wwttestapp
 
 
 ❯ kubectl get pods -n wwtwebapp
@@ -72,7 +72,45 @@ redis-cache         ClusterIP      10.43.14.213    <none>           6379/TCP    
 wwttestapp          ClusterIP      10.43.200.253   <none>           80/TCP         3h9m
 wwttestappservice   LoadBalancer   10.43.172.144   192.168.32.105   80:30531/TCP   44h
 ```
-Get External IP of wwttestappservice of type **loadbalancer** and test webstie or API calls.
+
+Add NGINX repo
+
+> helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx    
+> helm install nginx-wwtwebapp ingress-nginx/ingress-nginx --values nginx_vars.yml --namespace wwttestapp 
+
+Confirm pods for nginx are running
+
+❯ kubectl get pods -n wwttestapp
+NAME                                             READY   STATUS    RESTARTS   AGE
+nginx-wwtwebapp-ingress-nginx-controller-7hrlx   1/1     Running   0          13h
+nginx-wwtwebapp-ingress-nginx-controller-9f2lt   1/1     Running   0          13h
+nginx-wwtwebapp-ingress-nginx-controller-fl8jg   1/1     Running   0          13h
+
+❯ kubectl get svc -n wwttestapp
+NAME                                                 TYPE           CLUSTER-IP      EXTERNAL-IP     PORT(S)                      AGE
+nginx-wwtwebapp-ingress-nginx-controller             LoadBalancer   10.233.57.15    192.168.32.50   80:31071/TCP,443:32094/TCP   13h
+nginx-wwtwebapp-ingress-nginx-controller-admission   ClusterIP      10.233.53.155   <none>          443/TCP                      13h
+redis-cache                                          ClusterIP      10.233.9.93     <none>          6379/TCP                     2d20h
+wwttestapp                                           ClusterIP      10.233.3.100    <none>          80/TCP                       2d20h
+wwttestappservice                                    LoadBalancer   10.233.23.24    192.168.32.51   80:30063/TCP                 2d20h
+
+
+
+kubectl apply -f deploy_app_ingress.yml -n wwttestapp
+
+❯ kubectl get ingress -n wwttestapp
+NAME                 CLASS       HOSTS                    ADDRESS         PORTS   AGE
+ingress-wwttestapp   nginx-wwt   wwttestapp.k8.internal   192.168.32.50   80      13h
+
+
+Set DNS for hostname as defined in deploy_app_ingress.yml to match the External-IP of nginx-wwtwebapp-ingress-nginx-controller - !!! DO NOT POINT IT TO THE EXTERNAL-IP OF THE wwttestappservice !!!
+
+e.g wwttestapp.k8.internal  192.168.32.50
+
+
+Use a webrowser and API app to call relevant endpoints. 
+
+
 
 ## Known issues
-An intermittent websocket timeout might occur when connecting via HTTP. The background will appear but not text will be displayed. Refreshing the page should resovle the issue.
+Metallb does not support "load balancing" but very basic availability. This might cause failure of the web front end due to its reliance on SignalR + WebSocket. Use an ingress controller for an optimal experience.
