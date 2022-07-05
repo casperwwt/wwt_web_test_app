@@ -1,0 +1,10 @@
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: wwttestapps-external
+  # namespace: nginx
+spec:
+  type: ExternalName
+  externalName: wwttestapp.wwttestapp.svc.cluster.local
+  # externalName: google.com

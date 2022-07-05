@@ -59,7 +59,7 @@ metadata:
   labels:
     app: wwttestapp
 spec:
-  replicas: 3
+  replicas: 10
   strategy:
     rollingUpdate:
       maxSurge: 1
