@@ -12,8 +12,12 @@ metadata:
   # namespace: wwtwebapp
 spec:
   ingressClassName: nginx-wwt
+  tls:
+    - hosts:
+        - wwtwebapp.microsoft.k8testing.local
+      secretName: k8testing
   rules:
-  - host: "wwttestapp.k8.internal" #Update with correct URL
+  - host: "wwtwebapp.microsoft.k8testing.local" #Update with correct URL
     http:
       paths:
       - pathType: Prefix
