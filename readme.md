@@ -50,7 +50,6 @@ wwttestapp-ff9c4d796-npzhz      1/1     Running   0          19h
 Confirm all pods are running.
 
 ```
-
 ❯ kubectl  logs wwttestapp-ff9c4d796-7kth4 -n wwtwebapp
 [22:52:54 WRN] Storing keys in a directory '/root/.aspnet/DataProtection-Keys' that may not be persisted outside of the container. Protected data will be unavailable when container is destroyed.
 [22:52:54 INF] User profile is available. Using '/root/.aspnet/DataProtection-Keys' as key repository; keys will not be encrypted at rest.
@@ -61,7 +60,6 @@ Confirm all pods are running.
 [22:52:54 INF] Application started. Press Ctrl+C to shut down.
 [22:52:54 INF] Hosting environment: Production
 [22:52:54 INF] Content root path: /app/
-
 ```
 
 Confirm that pods are listening on http://[::]:80 - An error will be generated if the redisDb is not accessible.
@@ -75,17 +73,21 @@ wwttestappservice   LoadBalancer   10.43.172.144   192.168.32.105   80:30531/TCP
 
 Add NGINX repo
 
+```
 > helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx    
 > helm install nginx-wwtwebapp ingress-nginx/ingress-nginx --values nginx_vars.yml --namespace wwttestapp 
-
+```
 Confirm pods for nginx are running
 
+```
 ❯ kubectl get pods -n wwttestapp
 NAME                                             READY   STATUS    RESTARTS   AGE
 nginx-wwtwebapp-ingress-nginx-controller-7hrlx   1/1     Running   0          13h
 nginx-wwtwebapp-ingress-nginx-controller-9f2lt   1/1     Running   0          13h
 nginx-wwtwebapp-ingress-nginx-controller-fl8jg   1/1     Running   0          13h
+```
 
+```
 ❯ kubectl get svc -n wwttestapp
 NAME                                                 TYPE           CLUSTER-IP      EXTERNAL-IP     PORT(S)                      AGE
 nginx-wwtwebapp-ingress-nginx-controller             LoadBalancer   10.233.57.15    192.168.32.50   80:31071/TCP,443:32094/TCP   13h
@@ -93,16 +95,35 @@ nginx-wwtwebapp-ingress-nginx-controller-admission   ClusterIP      10.233.53.15
 redis-cache                                          ClusterIP      10.233.9.93     <none>          6379/TCP                     2d20h
 wwttestapp                                           ClusterIP      10.233.3.100    <none>          80/TCP                       2d20h
 wwttestappservice                                    LoadBalancer   10.233.23.24    192.168.32.51   80:30063/TCP                 2d20h
+```
 
 
+### TLS Configuration
 
+
+If TLS is NOT implemented, comment TLS out section in deploy_app_ingress
+
+```
+  # tls:
+  #   - hosts:
+  #       - wwtwebapp.microsoft.k8testing.local
+  #     secretName: k8testing
+```
+If TLS is to be used:
+
+```
+kubectl create secret tls k8testing --key=domain.key --cert=domain.crt -n wwttestapp
+```
+
+```
 kubectl apply -f deploy_app_ingress.yml -n wwttestapp
+```
 
+```
 ❯ kubectl get ingress -n wwttestapp
 NAME                 CLASS       HOSTS                    ADDRESS         PORTS   AGE
 ingress-wwttestapp   nginx-wwt   wwttestapp.k8.internal   192.168.32.50   80      13h
-
-
+```
 Set DNS for hostname as defined in deploy_app_ingress.yml to match the External-IP of nginx-wwtwebapp-ingress-nginx-controller - !!! DO NOT POINT IT TO THE EXTERNAL-IP OF THE wwttestappservice !!!
 
 e.g wwttestapp.k8.internal  192.168.32.50
